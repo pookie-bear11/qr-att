@@ -1,23 +1,31 @@
 import { useFocusEffect } from 'expo-router';
+
 import { useCallback, useState } from 'react';
+
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 
 import { COLORS } from '@/constants/colors';
+
 import { useAuth } from '@/lib/auth';
+
 import {
   getAttendanceHistory,
   type AttendanceRecord,
-} from '@/lib/attendance'
-import {
   getTeacherEventAttendance,
   type TeacherEventAttendance,
 } from '@/lib/attendance';
+
 import { getProfile } from '@/lib/profiles';
 
 export default function HistoryScreen() {
   const [role, setRole] = useState<'student' | 'teacher' | null>(null);
+
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
-  const [teacherEvents, setTeacherEvents] = useState<TeacherEventAttendance[]>([]);
+
+  const [teacherEvents, setTeacherEvents] = useState<
+    TeacherEventAttendance[]
+  >([]);
+
   const [loading, setLoading] = useState(true);
 
   const { user } = useAuth();
@@ -31,6 +39,7 @@ export default function HistoryScreen() {
     setLoading(true);
 
     const profile = await getProfile(user.id);
+
     const currentRole = profile?.role ?? 'student';
 
     setRole(currentRole);
@@ -75,7 +84,9 @@ export default function HistoryScreen() {
             renderItem={({ item }) => (
               <View style={styles.card}>
                 <View style={styles.titleRow}>
-                  <Text style={styles.eventTitle}>{item.title}</Text>
+                  <Text style={styles.eventTitle}>
+                    {item.title}
+                  </Text>
 
                   <View style={styles.countBadge}>
                     <Text style={styles.countText}>
@@ -109,7 +120,8 @@ export default function HistoryScreen() {
                       style={styles.attendeeRow}
                     >
                       <Text style={styles.studentId}>
-                        {shortId(student.studentId)}
+                        {student.studentName ||
+                          shortId(student.studentId)}
                       </Text>
 
                       <Text style={styles.eventMeta}>

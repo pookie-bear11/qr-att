@@ -1,5 +1,7 @@
 import { supabase } from './supabase';
+
 import { parseQRPayload } from './qr';
+
 import { getEventByCode } from './events';
 
 export type TeacherEventAttendance = {
@@ -11,6 +13,7 @@ export type TeacherEventAttendance = {
   attendeeCount: number;
   attendees: {
     studentId: string;
+    studentName: string | null;
     scannedAt: string;
   }[];
 };
@@ -25,7 +28,12 @@ export async function getTeacherEventAttendance(
     .eq('created_by', teacherId)
     .order('created_at', { ascending: false });
 
-  if (eventError || !events) return [];
+  if (eventError) {
+    console.log('TEACHER EVENT ERROR:', eventError);
+    return [];
+  }
+
+  if (!events) return [];
 
   const eventIds = events.map((e: any) => e.id);
 
@@ -34,11 +42,24 @@ export async function getTeacherEventAttendance(
   // 2. Get attendance for those events
   const { data: attendance, error: attError } = await supabase
     .from('attendance')
-    .select('student_id, scanned_at, event_id')
+    .select(`
+      student_id,
+      scanned_at,
+      event_id,
+      profiles!attendance_student_id_fkey (
+        full_name,
+        email
+      )
+    `)
     .in('event_id', eventIds)
     .order('scanned_at', { ascending: false });
 
-  if (attError || !attendance) return [];
+  if (attError) {
+    console.log('TEACHER ATTENDANCE ERROR:', attError);
+    return [];
+  }
+
+  if (!attendance) return [];
 
   // 3. Group attendance by event
   return events.map((e: any) => {
@@ -55,6 +76,7 @@ export async function getTeacherEventAttendance(
       attendeeCount: rows.length,
       attendees: rows.map((a: any) => ({
         studentId: a.student_id,
+        studentName: a.profiles?.full_name ?? null,
         scannedAt: a.scanned_at,
       })),
     };
